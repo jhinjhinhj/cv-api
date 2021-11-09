@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="10 seconds" >
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>debug</level>
+        </filter>
+        <encoder>
+            <Pattern>%date [%5p    ] [%thread] %logger{60} [%file : %line] %msg%n
+            </Pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <logger name="cn.cherryv.cvapi.mapper" level="debug"/>
+
+    <!--如果root标签指定的日志级别那么以根日志级别为准,如果没有则已当前追加器日志级别为准-->
+    <!--全部-->
+    <!--
+        appender trace  trace
+        root     trace
+
+        appender trace  debug
+        root     debug
+
+        appender trace   debug
+        root     空      如果root没有值默认root级别是debug
+
+        appender debug  info
+        root     info
+    -->
+    <root level="info">
+        <appender-ref ref="CONSOLE"/>
+        <!--<appender-ref ref="FILE"/>-->
+    </root>
+</configuration>

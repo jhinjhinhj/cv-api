@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.cherryv.cvapi.mapper.MingXiMapper">
+
+    <resultMap id="MingXiResultMap" type="cn.cherryv.cvapi.model.Mingxi">
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="process_id" jdbcType="VARCHAR" property="processId"/>
+        <result column="cuid" jdbcType="VARCHAR" property="cuid"/>
+        <result column="ticket" jdbcType="TIMESTAMP" property="ticket"/>
+        <result column="province" jdbcType="VARCHAR" property="province"/>
+        <result column="city" jdbcType="VARCHAR" property="city"/>
+        <result column="brand" jdbcType="VARCHAR" property="brand"/>
+        <result column="store_name" jdbcType="VARCHAR" property="storeName"/>
+        <result column="sname" jdbcType="VARCHAR" property="salesManName"/>
+        <result column="id" jdbcType="VARCHAR" property="salesManPhone"/>
+        <result column="identity_card" jdbcType="VARCHAR" property="identityCard"/>
+        <result column="bname" jdbcType="VARCHAR" property="brandName"/>
+        <result column="product_name" jdbcType="VARCHAR" property="productName"/>
+        <result column="sales_product_count" jdbcType="INTEGER" property="salesProductCount"/>
+        <result column="bonus" jdbcType="DECIMAL" property="bonus"/>
+        <result column="created_at" jdbcType="TIMESTAMP" property="createdAt"/>
+    </resultMap>
+
+    <resultMap id="MingXiResultMap1" type="cn.cherryv.cvapi.model.WeiFa">
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="process_id" jdbcType="VARCHAR" property="processId"/>
+        <result column="cuid" jdbcType="VARCHAR" property="cuid"/>
+        <result column="ticket" jdbcType="TIMESTAMP" property="ticket"/>
+        <result column="province" jdbcType="VARCHAR" property="province"/>
+        <result column="city" jdbcType="VARCHAR" property="city"/>
+        <result column="brand" jdbcType="VARCHAR" property="brand"/>
+        <result column="store_name" jdbcType="VARCHAR" property="storeName"/>
+        <result column="sname" jdbcType="VARCHAR" property="salesManName"/>
+        <result column="id" jdbcType="VARCHAR" property="salesManPhone"/>
+        <result column="identity_card" jdbcType="VARCHAR" property="identityCard"/>
+        <result column="bname" jdbcType="VARCHAR" property="brandName"/>
+        <result column="product_name" jdbcType="VARCHAR" property="productName"/>
+        <result column="sales_product_count" jdbcType="INTEGER" property="salesProductCount"/>
+    </resultMap>
+
+    <resultMap id="MingXiResultMap2" type="cn.cherryv.cvapi.model.SaleMans">
+        <result column="created_at" jdbcType="TIMESTAMP" property="createdAt"/>
+        <result column="province" jdbcType="VARCHAR" property="province"/>
+        <result column="city" jdbcType="VARCHAR" property="city"/>
+        <result column="bname" jdbcType="VARCHAR" property="brandName"/>
+        <result column="brand" jdbcType="VARCHAR" property="brand"/>
+        <result column="store_name" jdbcType="VARCHAR" property="storeName"/>
+        <result column="sname" jdbcType="VARCHAR" property="salesManName"/>
+        <result column="id" jdbcType="VARCHAR" property="salesManPhone"/>
+        <result column="identity_card" jdbcType="VARCHAR" property="identityCard"/>
+        <result column="sales_product_count" jdbcType="INTEGER" property="salesProductCount"/>
+        <result column="bonus" jdbcType="DECIMAL" property="money"/>
+    </resultMap>
+
+    <resultMap id="MingXiResultMap3" type="cn.cherryv.cvapi.model.Stroes">
+        <result column="created_at" jdbcType="TIMESTAMP" property="createdAt"/>
+        <result column="bname" jdbcType="VARCHAR" property="brandName"/>
+        <result column="province" jdbcType="VARCHAR" property="province"/>
+        <result column="city" jdbcType="VARCHAR" property="city"/>
+        <result column="brand" jdbcType="VARCHAR" property="brand"/>
+        <result column="store_name" jdbcType="VARCHAR" property="storeName"/>
+        <result column="sales_product_count" jdbcType="INTEGER" property="salesProductCount"/>
+        <result column="bonus" jdbcType="DECIMAL" property="money"/>
+    </resultMap>
+
+
+    <select id="selectMingXi" parameterType="cn.cherryv.cvapi.model.Mingxi" resultMap="MingXiResultMap">
+        select a.name,
+               sv.process_id,
+               # fi.form_json,
+               substring_index(SUBSTRING_INDEX(CONCAT('"":"",', form_json), CONCAT('"', 'cuid', '":'), -1), ',',
+                               1)                                                                           as cuid,
+               sv.ticket,
+               si.province,
+               si.city,
+               si.brand,
+               si.store_name,
+               si.name                                                                                      as sname,
+               si.id,
+               si.identity_card,
+               bi.name                                                                                      as bname,
+               sv.product_name,
+               sv.sales_product_count,
+               (select sum(settle_bonus) from cherryv.activity_sales_settle_middle where settle_id = asvm.settle_id) /
+               (select count(*) from cherryv.activity_sales_volume_middle where settle_id = asvm.settle_id) as bonus,
+               asvm.created_at
+        from cherryv.sales_volume sv
+                 join cherryv.sale_apply_form saf on sv.process_id = saf.pid and status = 2 and owner_type = 1
+                 join cherryv.form_info fi on saf.form_info_id = fi.form_id
+                 join cherryv.activity_sales_volume_middle asvm on sv.id = asvm.sales_volume_id and asvm.status = 1
+                 join cherryv.activity a on a.id = asvm.activity_id
+                 join cherryv.sale_info si on sv.sale_id = si.id
+                 join cherryv.brand_info bi on sv.brand_id = bi.id
+        where asvm.created_at like '2021-10%';
+    </select>
+
+    <select id="selectSaleMans" resultMap="MingXiResultMap2">
+        SELECT asvm.created_at,
+               si.province,
+               si.city,
+               bi.NAME                          AS bname,
+               si.brand,
+               si.store_name,
+               si.NAME                          AS sname,
+               si.identity_card,
+               si.id,
+               (
+                   sum(sv.sales_product_count)) AS sales_product_count,
+               (sum(assm.settle_bonus))         AS bonus
+        FROM cherryv.sales_volume sv
+                 JOIN cherryv.sale_apply_form saf ON sv.process_id = saf.pid
+            AND STATUS = 2
+            AND owner_type = 1
+                 JOIN cherryv.form_info fi ON saf.form_info_id = fi.form_id
+                 JOIN cherryv.activity_sales_volume_middle asvm ON sv.id = asvm.sales_volume_id
+            AND asvm.STATUS = 1
+                 JOIN cherryv.activity a ON a.id = asvm.activity_id
+                 JOIN cherryv.sale_info si ON sv.sale_id = si.id
+                 JOIN cherryv.brand_info bi ON sv.brand_id = bi.id
+                 JOIN cherryv.activity_sales_settle_middle assm ON assm.sale_id = sv.sale_id
+        WHERE asvm.created_at LIKE '2021-10%'
+        GROUP BY si.store_brand_id;
+    </select>
+
+    <select id="selectStore" resultMap="MingXiResultMap3">
+        select asvm.created_at,
+               si.name                     as sname,
+               bi.NAME                     AS bname,
+               si.province,
+               si.city,
+               si.brand,
+               si.store_name,
+               sum(sv.sales_product_count) as sales_product_count,
+               sum(assm.settle_bonus)      as bonus
+        from cherryv.sales_volume sv
+                 join cherryv.sale_apply_form saf on sv.process_id = saf.pid and status = 2 and owner_type = 1
+                 join cherryv.form_info fi on saf.form_info_id = fi.form_id
+                 join cherryv.activity_sales_volume_middle asvm on sv.id = asvm.sales_volume_id and asvm.status = 1
+                 join cherryv.activity a on a.id = asvm.activity_id
+                 join cherryv.sale_info si on sv.sale_id = si.id
+                 join cherryv.brand_info bi on sv.brand_id = bi.id
+                 JOIN cherryv.activity_sales_settle_middle assm ON assm.sale_id = sv.sale_id
+        where asvm.created_at like '2021-10%'
+        group by si.store_brand_id, store_name;
+    </select>
+
+    <select id="CountMoney" resultType="Long">
+        select sum(bonus)
+        from cherryv.bonus_supplier_middle
+        where project = 3
+          and created_at like '2021-10%'
+    </select>
+
+    <select id="selectWeiFa" parameterType="cn.cherryv.cvapi.model.WeiFa" resultMap="MingXiResultMap1">
+        select a.name,
+               sv.process_id,
+               # fi.form_json,
+               substring_index(SUBSTRING_INDEX(CONCAT('"":"",', form_json), CONCAT('"', 'cuid', '":'), -1), ',',
+                               1) as cuid,
+               sv.ticket,
+               si.province,
+               si.city,
+               si.brand,
+               si.store_name,
+               si.name            as sname,
+               si.id,
+               si.identity_card,
+               bi.name            as bname,
+               sv.product_name,
+               sv.sales_product_count
+        from cherryv.sales_volume sv
+                 join cherryv.sale_apply_form saf on sv.process_id = saf.pid and status = 2 and owner_type = 1
+                 join cherryv.form_info fi on saf.form_info_id = fi.form_id
+                 join cherryv.sale_info si on sv.sale_id = si.id
+                 join cherryv.brand_info bi on sv.brand_id = bi.id
+                 join cherryv.activity_middle am on sv.sale_id = am.sale_id and sv.product_id = am.product_id
+                 join cherryv.activity a on a.id = am.activity_id
+        where sv.created_at > '2021-10-01'
+          and not exists(select 1
+                         from cherryv.activity_sales_volume_middle asvm
+                         where asvm.activity_id = a.id
+                           and sales_volume_id = sv.id)
+    </select>
+
+
+</mapper>
